@@ -85,3 +85,152 @@
   font-size: 0.75rem;
   color: #999;
 }
+
+.error-text {
+  background: #ffe6e6;
+  color: #c0392b;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.dashboard {
+  min-height: 100vh;
+  background: #f4f6f8;
+  padding: 2rem;
+}
+
+.dashboard-header {
+  margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+  color: #1e3c72;
+}
+
+.dashboard-header p {
+  color: #666;
+}
+
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #1e3c72;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  background: #1e3c72;
+  color: white;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.sidebar nav a {
+  display: block;
+  color: #dce3f0;
+  text-decoration: none;
+  padding: 0.7rem;
+  border-radius: 6px;
+  margin-bottom: 0.3rem;
+}
+
+.sidebar nav a.active,
+.sidebar nav a:hover {
+  background: #2a5298;
+  color: white;
+}
+
+.logout-btn {
+  margin-top: auto;
+  background: #c0392b;
+  border: none;
+  color: white;
+  padding: 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.content {
+  flex: 1;
+  padding: 2rem;
+  background: #f4f6f8;
+}
+
+.table {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.table th,
+.table td {
+  padding: 0.8rem;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background: #f0f2f5;
+  text-align: left;
+}
+
+.form-inline {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.form-inline input {
+  padding: 0.5rem;
+}
+
+.form-inline button {
+  background: #1e3c72;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.danger {
+  background: #c0392b;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+
