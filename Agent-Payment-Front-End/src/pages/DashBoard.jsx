@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { getDashboardStats } from "../services/reports";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { FaCalendarAlt, FaFilter } from "react-icons/fa";
 
@@ -44,18 +44,12 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadStats() {
       try {
-        const token = localStorage.getItem("token");
-        
-        let url = "http://localhost:8000/reports/dashboard";
         const params = {};
         if (timeRange === "month") {
             params.month = selectedMonth;
         }
 
-        const res = await axios.get(url, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: params
-        });
+        const res = await getDashboardStats(params);
         setStats(res.data);
       } catch (err) {
         console.error("Error loading dashboard stats:", err);

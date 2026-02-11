@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import Payment, Agent
-from app.schemas import PaymentCreate, PaymentOut
+from app.schemas import PaymentCreate, PaymentOut, PaymentStatusUpdate
 from app.deps import get_current_user
 from typing import List
 from datetime import date
@@ -153,7 +153,7 @@ def debug_payments(db: Session = Depends(get_db)):
 @router.patch("/{payment_id}/status")
 def update_payment_status(
     payment_id: int,
-    status: str = Body(..., embed=True),
+    status_update: PaymentStatusUpdate,
     db: Session = Depends(get_db),
     user=Depends(get_current_user)
 ):
@@ -161,6 +161,6 @@ def update_payment_status(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
 
-    payment.status = status
+    payment.status = status_update.status
     db.commit()
-    return {"message": "Status updated successfully", "status": status}
+    return {"message": "Status updated successfully", "status": payment.status}

@@ -29,6 +29,9 @@ class PaymentCreate(BaseModel):
     payment_date: Optional[date] = None
     status: Optional[str] = None
 
+class PaymentStatusUpdate(BaseModel):
+    status: str
+
 class PaymentOut(PaymentCreate):
     id: int
 

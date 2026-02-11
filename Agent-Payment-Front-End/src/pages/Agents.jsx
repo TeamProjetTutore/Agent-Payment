@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAgents, createAgent, deleteAgent, updateAgent } from "../services/agents";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Agents() {
   const [agents, setAgents] = useState([]);
@@ -111,10 +112,12 @@ export default function Agents() {
                 <td>${a.salary?.toLocaleString() || 0}</td>
                 <td>
                   <button className="btn btn-edit" onClick={() => handleEdit(a)} style={{ marginRight: "10px" }}>
-                      Edit
+                      <span className="desktop-only">Edit</span>
+                      <FaEdit className="mobile-only" />
                   </button>
                   <button className="btn danger" onClick={() => handleDelete(a.id)}>
-                    Delete
+                      <span className="desktop-only">Delete</span>
+                      <FaTrash className="mobile-only" />
                   </button>
                 </td>
               </tr>

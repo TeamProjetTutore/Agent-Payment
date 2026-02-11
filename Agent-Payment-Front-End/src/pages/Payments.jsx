@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { getPayments, createPayment } from "../services/payments";
+import { getPayments, createPayment, updatePaymentStatus } from "../services/payments";
 import { getAgents } from "../services/agents";
 import { getDebts } from "../services/debts";
-import axios from "axios"; // Ensure axios is imported for local patch if service not updated
+import { FaCheck, FaTimes } from "react-icons/fa";
 
 export default function Payments() {
   const [payments, setPayments] = useState([]);
@@ -117,12 +117,7 @@ export default function Payments() {
   // Handle Validate (Update Status)
   async function handleValidate(paymentId) {
     try {
-        const token = localStorage.getItem("token");
-        // Update status to completed
-        await axios.patch(`http://localhost:8000/payments/${paymentId}/status`, 
-            { status: "Completed" }, 
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await updatePaymentStatus(paymentId, "Completed");
         // Refresh list
         loadData();
     } catch (err) {
@@ -136,11 +131,7 @@ export default function Payments() {
     if (!window.confirm("Are you sure you want to cancel this payment?")) return;
 
     try {
-        const token = localStorage.getItem("token");
-        await axios.patch(`http://localhost:8000/payments/${paymentId}/status`, 
-            { status: "Cancelled" }, 
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await updatePaymentStatus(paymentId, "Cancelled");
         loadData();
     } catch (err) {
         console.error("Error cancelling payment:", err);
@@ -343,19 +334,17 @@ export default function Payments() {
                             <button
                               onClick={() => handleValidate(p.id)}
                               className="btn btn-success"
-                              /* style removed */
-  
                             >
-                                Validate
+                                <span className="desktop-only">Validate</span>
+                                <FaCheck className="mobile-only" />
                             </button>
                             
                             <button
                               onClick={() => handleCancel(p.id)}
                               className="btn btn-cancel"
-                              /* style removed */
-  
                             >
-                                Cancel
+                                <span className="desktop-only">Cancel</span>
+                                <FaTimes className="mobile-only" />
                             </button>
                           </>
                         )}

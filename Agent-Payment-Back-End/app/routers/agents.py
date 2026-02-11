@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
-from app.models import Agent
+from app.models import Agent, Payment, Debt
 from app.schemas import AgentCreate, AgentOut
 from app.deps import admin_only
 
@@ -26,6 +26,17 @@ def create_agent(agent: AgentCreate, db: Session = Depends(get_db), user=Depends
 def get_agents(db: Session = Depends(get_db)):
     return db.query(Agent).all()
 
+@router.delete("/{agent_id}")
+def delete_agent(agent_id: int, db: Session = Depends(get_db), user=Depends(admin_only)):
+    agent = db.get(Agent, agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    
+    # Delete related records to maintain integrity
+    db.query(Payment).filter(Payment.agent_id == agent_id).delete()
+    db.query(Debt).filter(Debt.agent_id == agent_id).delete()
+    
+    db.delete(agent)
     db.commit()
     return {"message": "Agent deleted"}
 

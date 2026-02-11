@@ -11,3 +11,5 @@ export const downloadPayslip = (params) => API.get("/reports/payslip/pdf", {
     params: { ...params, _t: Date.now() },
     responseType: 'blob'
 });
+
+export const getDashboardStats = (params) => API.get("/reports/dashboard", { params });
