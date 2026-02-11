@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDebts, createDebt, deleteDebt } from "../services/debts";
+import { getDebts, createDebt, deleteDebt } from "../services/debts.js";
 import { getAgents } from "../services/agents";
 
 export default function Debts() {
