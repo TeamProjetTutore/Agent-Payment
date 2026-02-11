@@ -7,7 +7,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Ch%40rLyv34@loca
 
 # Fix for Render: sqlalchemy requires 'postgresql://', but Render providing 'postgres://'
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
