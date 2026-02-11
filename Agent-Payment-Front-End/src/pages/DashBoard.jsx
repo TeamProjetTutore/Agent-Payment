@@ -108,7 +108,7 @@ export default function Dashboard() {
                     fontWeight: "500",
                     transition: "all 0.2s",
                     backgroundColor: timeRange === "all" ? "white" : "transparent",
-                    color: timeRange === "all" ? "#007bff" : "#666",
+                    color: timeRange === "all" ? "#1e3c72" : "#666",
                     boxShadow: timeRange === "all" ? "0 2px 4px rgba(0,0,0,0.1)" : "none"
                 }}
               >
@@ -124,7 +124,7 @@ export default function Dashboard() {
                     fontWeight: "500",
                     transition: "all 0.2s",
                     backgroundColor: timeRange === "month" ? "white" : "transparent",
-                    color: timeRange === "month" ? "#007bff" : "#666",
+                    color: timeRange === "month" ? "#1e3c72" : "#666",
                     boxShadow: timeRange === "month" ? "0 2px 4px rgba(0,0,0,0.1)" : "none"
                 }}
               >
@@ -159,7 +159,7 @@ export default function Dashboard() {
       </div>
 
       {/* TOP CARDS */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px" }}>
+      <div className="dashboard-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px" }}>
         <div style={cardStyle}>
           <h3 style={cardTitleStyle}>Total Agents</h3>
           <p style={valStyle}>{stats.total_agents}</p>
@@ -172,7 +172,7 @@ export default function Dashboard() {
 
       {/* STATUS CARDS */}
       <h3 style={{ color: "#444", marginBottom: "15px" }}>Payment Statuses</h3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "15px", marginBottom: "30px" }}>
+      <div className="dashboard-status-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "15px", marginBottom: "30px" }}>
         <div style={{...cardStyle, borderLeft: "5px solid #ffc107"}}>
           <h4 style={statusTitleStyle}>Pending</h4>
           <p style={valStyle}>{stats.pending_count}</p>

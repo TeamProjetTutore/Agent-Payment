@@ -34,3 +34,18 @@ class PaymentOut(PaymentCreate):
 
     class Config:
         from_attributes = True
+
+
+# ---------- DEBTS ----------
+class DebtCreate(BaseModel):
+    agent_id: int
+    amount: float
+    reason: str
+    debt_date: Optional[date] = None
+
+class DebtOut(DebtCreate):
+    id: int
+
+    class Config:
+        from_attributes = True
+
