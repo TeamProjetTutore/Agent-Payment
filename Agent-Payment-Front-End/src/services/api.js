@@ -9,7 +9,6 @@ const api = axios.create({
   },
 });
 
-/* Attach token automatically */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   console.log("🔍 REQUEST to:", config.url);
@@ -17,7 +16,7 @@ api.interceptors.request.use((config) => {
   
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log("✅ Authorization header set");
+    // console.log("✅ Authorization header set");
     
     // Debug: Show token expiry
     try {
