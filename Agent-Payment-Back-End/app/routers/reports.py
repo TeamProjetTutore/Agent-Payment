@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
 from app.database import SessionLocal
-from app.models import Payment
-from fastapi.responses import FileResponse
+from app.models import Payment, Agent, Debt
+from fastapi.responses import StreamingResponse
+from sqlalchemy import func
+from typing import Optional
+from datetime import date, datetime
+import os
+import io
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
@@ -15,31 +21,177 @@ def get_db():
     finally:
         db.close()
 
-@router.get("/payments/pdf")
-def payments_pdf():
-    file = "payments.pdf"
-    c = canvas.Canvas(file, pagesize=A4)
-    y = 800
+# Helper to generate a generic PDF table header
+def draw_header(c, title):
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(300, 800, "AgentPay Management System")
+    c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(300, 770, title)
+    c.setFont("Helvetica", 10)
+    c.drawCentredString(300, 750, f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    c.line(50, 740, 550, 740)
 
-    c.drawString(200, y, "Payments Report")
-    y -= 40
-
-    db = SessionLocal()
-    payments = db.query(Payment).all()
-
-    for p in payments:
-        c.drawString(50, y, f"Agent ID: {p.agent_id} | Amount: {p.amount} | {p.status}")
+@router.get("/agents/pdf")
+def agents_pdf(db: Session = Depends(get_db)):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    draw_header(c, "List of Agents")
+    
+    y = 700
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, y, "ID")
+    c.drawString(100, y, "Name")
+    c.drawString(250, y, "Role")
+    c.drawString(400, y, "Salary")
+    
+    y -= 20
+    c.line(50, y+15, 550, y+15)
+    c.setFont("Helvetica", 10)
+    
+    agents = db.query(Agent).all()
+    for a in agents:
+        c.drawString(50, y, str(a.id))
+        c.drawString(100, y, a.name)
+        c.drawString(250, y, a.role)
+        c.drawString(400, y, f"${a.salary:,.2f}")
         y -= 20
+        if y < 50:
+            c.showPage()
+            y = 750
 
     c.save()
-    return FileResponse(file, filename="payments.pdf")
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type='application/pdf', headers={
+        "Content-Disposition": "attachment; filename=agents_list.pdf"
+    })
 
-# ✅ NEW: Dashboard Stats Endpoint
-from sqlalchemy import func
-from app.models import Agent
+@router.get("/debts/pdf")
+def debts_pdf(db: Session = Depends(get_db)):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    draw_header(c, "List of All Debts")
+    
+    y = 700
+    c.setFont("Helvetica-Bold", 10)
+    c.drawString(50, y, "Agent")
+    c.drawString(200, y, "Amount")
+    c.drawString(300, y, "Reason")
+    c.drawString(450, y, "Date")
+    
+    y -= 20
+    c.setFont("Helvetica", 10)
+    
+    debts = db.query(Debt).all()
+    for d in debts:
+        agent = db.query(Agent).filter(Agent.id == d.agent_id).first()
+        name = agent.name if agent else f"ID: {d.agent_id}"
+        c.drawString(50, y, name)
+        c.drawString(200, y, f"${d.amount:,.2f}")
+        c.drawString(300, y, d.reason)
+        c.drawString(450, y, str(d.debt_date))
+        y -= 20
+        if y < 50:
+            c.showPage()
+            y = 750
 
-from typing import Optional
-from datetime import date, datetime, timedelta
+    c.save()
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type='application/pdf', headers={
+        "Content-Disposition": "attachment; filename=debts_list.pdf"
+    })
+
+@router.get("/payslip/pdf")
+def generate_payslip(
+    agent_id: int, 
+    type: str, # "monthly", "yearly", "all"
+    month: Optional[str] = None, # YYYY-MM
+    year: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    agent = db.query(Agent).filter(Agent.id == agent_id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    draw_header(c, f"PAYSLIP - {type.upper()}")
+
+    # Agent Info Box
+    c.rect(50, 650, 500, 80)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(60, 710, f"Agent Name: {agent.name}")
+    c.setFont("Helvetica", 10)
+    c.drawString(60, 690, f"Role: {agent.role}")
+    c.drawString(60, 670, f"Base Salary: ${agent.salary:,.2f}")
+
+    # Logic to fetch payments and debts based on type
+    payments_query = db.query(Payment).filter(Payment.agent_id == agent_id, Payment.status == "Completed")
+    debts_query = db.query(Debt).filter(Debt.agent_id == agent_id)
+
+    title_period = ""
+    if type == "monthly" and month:
+        start_date = datetime.strptime(month, "%Y-%m").date()
+        if start_date.month == 12:
+            end_date = date(start_date.year + 1, 1, 1)
+        else:
+            end_date = date(start_date.year, start_date.month + 1, 1)
+        payments_query = payments_query.filter(Payment.payment_date >= start_date, Payment.payment_date < end_date)
+        debts_query = debts_query.filter(Debt.debt_date >= start_date, Debt.debt_date < end_date)
+        title_period = f"Period: {month}"
+    elif type == "yearly" and year:
+        payments_query = payments_query.filter(func.extract('year', Payment.payment_date) == year)
+        debts_query = debts_query.filter(func.extract('year', Debt.debt_date) == year)
+        title_period = f"Year: {year}"
+    else:
+        title_period = "All Time Record"
+
+    c.drawString(400, 710, title_period)
+
+    payments = payments_query.all()
+    debts = debts_query.all()
+
+    total_paid = sum(p.amount for p in payments)
+    total_debt = sum(d.amount for d in debts)
+
+    y = 600
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Earnings (Payments Received)")
+    y -= 20
+    c.setFont("Helvetica", 10)
+    for p in payments:
+        c.drawString(70, y, f"Date: {p.payment_date} | Amount: ${p.amount:,.2f}")
+        y -= 15
+    
+    y -= 10
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Deductions (Debts Taken)")
+    y -= 20
+    c.setFont("Helvetica", 10)
+    for d in debts:
+        c.drawString(70, y, f"Date: {d.debt_date} | {d.reason}: -${d.amount:,.2f}")
+        y -= 15
+
+    y -= 30
+    c.line(50, y, 550, y)
+    y -= 20
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(50, y, "SUMMARY")
+    y -= 20
+    c.setFont("Helvetica", 12)
+    c.drawString(70, y, f"Total Earnings: ${total_paid:,.2f}")
+    y -= 20
+    c.drawString(70, y, f"Total Deductions: -${total_debt:,.2f}")
+    y -= 20
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(colors.blue)
+    net = total_paid
+    c.drawString(70, y, f"NET PAID: ${net:,.2f}")
+    
+    c.save()
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type='application/pdf', headers={
+        "Content-Disposition": f"attachment; filename=payslip_{agent.name}_{type}.pdf"
+    })
 
 @router.get("/dashboard")
 def get_dashboard_stats(month: Optional[str] = None, db: Session = Depends(get_db)):
@@ -97,3 +249,4 @@ def get_dashboard_stats(month: Optional[str] = None, db: Session = Depends(get_d
             "cancelled_count": 0,
             "recent_payments": []
         }
+

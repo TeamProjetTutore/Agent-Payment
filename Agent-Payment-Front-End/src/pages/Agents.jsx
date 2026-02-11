@@ -56,7 +56,7 @@ export default function Agents() {
       <h2>Agents</h2>
 
       {/* CREATE / EDIT FORM */}
-      <form className="form-inline" onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
+      <form className="form-inline" onSubmit={handleSubmit} style={{ marginBottom: "20px", justifyContent: "center" }}>
         <input
           id="name"
           name="name"
@@ -82,42 +82,46 @@ export default function Agents() {
           onChange={(e) => setForm({ ...form, salary: e.target.value })}
           required
         />
-        <button type="submit">{editingId ? "Update" : "Add"}</button>
+        <button type="submit" className="btn" style={{ backgroundColor: "#1e3c72", color: "white" }}>
+          {editingId ? "Update" : "Add"}
+        </button>
         {editingId && (
-            <button type="button" onClick={handleCancelEdit} style={{ marginLeft: "10px", backgroundColor: "#6c757d" }}>
+            <button type="button" className="btn" onClick={handleCancelEdit} style={{ marginLeft: "10px", backgroundColor: "#6c757d", color: "white" }}>
                 Cancel
             </button>
         )}
       </form>
 
       {/* LIST */}
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Salary</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {agents.map((a) => (
-            <tr key={a.id}>
-              <td>{a.name}</td>
-              <td>{a.role}</td>
-              <td>${a.salary?.toLocaleString() || 0}</td>
-              <td>
-                <button onClick={() => handleEdit(a)} style={{ marginRight: "5px", backgroundColor: "#ffc107", color: "black" }}>
-                    Edit
-                </button>
-                <button className="danger" onClick={() => handleDelete(a.id)}>
-                  Delete
-                </button>
-              </td>
+      <div className="table-container">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Salary</th>
+              <th>Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {agents.map((a) => (
+              <tr key={a.id}>
+                <td>{a.name}</td>
+                <td>{a.role}</td>
+                <td>${a.salary?.toLocaleString() || 0}</td>
+                <td>
+                  <button className="btn btn-edit" onClick={() => handleEdit(a)} style={{ marginRight: "10px" }}>
+                      Edit
+                  </button>
+                  <button className="btn danger" onClick={() => handleDelete(a.id)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

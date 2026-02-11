@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { getPayments, createPayment } from "../services/payments";
 import { getAgents } from "../services/agents";
+import { getDebts } from "../services/debts";
 import axios from "axios"; // Ensure axios is imported for local patch if service not updated
 
 export default function Payments() {
   const [payments, setPayments] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [allDebts, setAllDebts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   
@@ -37,10 +39,11 @@ export default function Payments() {
       setLoading(true);
       setError("");
       
-      // Load payments and agents in parallel
-      const [paymentsRes, agentsRes] = await Promise.allSettled([
+      // Load payments, agents, and debts in parallel
+      const [paymentsRes, agentsRes, debtsRes] = await Promise.allSettled([
         getPayments(),
-        getAgents()
+        getAgents(),
+        getDebts()
       ]);
 
       // Handle payments response
@@ -60,6 +63,13 @@ export default function Payments() {
         setAgents(agentsRes.value.data);
       } else {
         console.error("Failed to load agents:", agentsRes.reason);
+      }
+
+      // Handle debts response
+      if (debtsRes.status === "fulfilled") {
+        setAllDebts(debtsRes.value.data);
+      } else {
+        console.error("Failed to load debts:", debtsRes.reason);
       }
 
     } catch (err) {
@@ -83,7 +93,7 @@ export default function Payments() {
         agent_id: parseInt(form.agent_id),
         status: "pending", // Default status
         // Append day to month string for backend compatibility
-        payment_date: `${form.payment_date}-01`
+        payment_date: `${form.payment_date}-25`
       };
       
       await createPayment(paymentData);
@@ -149,20 +159,7 @@ export default function Payments() {
     return <div>Loading payments...</div>;
   }
 
-  // Show error state
-  if (error) {
-    return (
-      <div>
-        <h2>Payments</h2>
-        <div style={{ color: "red", padding: "10px", border: "1px solid red" }}>
-          Error: {error}
-        </div>
-        <button onClick={() => window.location.href = "/login"}>
-          Go to Login
-        </button>
-      </div>
-    );
-  }
+
 
   // Max date for month picker (current month)
   const maxMonth = new Date().toISOString().slice(0, 7);
@@ -171,17 +168,35 @@ export default function Payments() {
     <div style={{ padding: "20px" }}>
       <h2>Payments</h2>
 
+      {error && (
+        <div style={{ 
+          color: "#721c24", 
+          backgroundColor: "#f8d7da", 
+          borderColor: "#f5c6cb",
+          padding: "10px", 
+          marginBottom: "20px",
+          border: "1px solid transparent",
+          borderRadius: "4px"
+        }}>
+          {error}
+        </div>
+      )}
+
       {/* CREATE FORM */}
       <form 
         onSubmit={handleSubmit} 
         style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: "10px",
-          marginBottom: "20px",
+          display: "flex", 
+          flexWrap: "wrap",
+          gap: "20px",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          margin: "0 auto 20px auto",
+          maxWidth: "100%",
           padding: "20px",
           border: "1px solid #ddd",
-          borderRadius: "5px"
+          borderRadius: "5px",
+          backgroundColor: "#fff"
         }}
       >
         <div>
@@ -195,10 +210,22 @@ export default function Payments() {
             onChange={(e) => {
                 const agentId = parseInt(e.target.value);
                 const agent = agents.find(a => a.id === agentId);
+                
+                // Calculate total debt for this agent in the SELECTED MONTH
+                const selectedMonth = form.payment_date; // YYYY-MM
+                const agentDebtsInMonth = allDebts.filter(d => 
+                    d.agent_id === agentId && 
+                    d.debt_date.startsWith(selectedMonth)
+                );
+                const totalMonthDebt = agentDebtsInMonth.reduce((sum, debt) => sum + parseFloat(debt.amount), 0);
+                
+                // Set amount to salary - total month debt
+                const finalAmount = agent ? Math.max(0, agent.salary - totalMonthDebt) : "";
+
                 setForm({ 
                     ...form, 
                     agent_id: e.target.value,
-                    amount: agent ? agent.salary : form.amount 
+                    amount: finalAmount
                 });
             }}
             required
@@ -241,7 +268,6 @@ export default function Payments() {
             value={form.payment_date}
             onChange={(e) => setForm({ ...form, payment_date: e.target.value })}
             required
-            style={{ width: "100%", padding: "8px" }}
           />
         </div>
 
@@ -250,13 +276,11 @@ export default function Payments() {
         <div style={{ display: "flex", alignItems: "flex-end" }}>
           <button 
             type="submit"
+            className="btn"
             style={{
-              padding: "10px 20px",
-              backgroundColor: "#007bff",
+              padding: "10px 25px",
+              backgroundColor: "#1e3c72",
               color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer"
             }}
           >
             Add Payment
@@ -266,21 +290,8 @@ export default function Payments() {
 
       {/* PAYMENTS LIST */}
       <div style={{ marginTop: "20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+        <div style={{ marginBottom: "10px" }}>
           <h3>Payment List ({payments.length})</h3>
-          <button 
-            onClick={loadData}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#6c757d",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer"
-            }}
-          >
-            Refresh
-          </button>
         </div>
 
         {payments.length === 0 ? (
@@ -288,82 +299,72 @@ export default function Payments() {
             No payments found
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: "#f8f9fa" }}>
-                <th style={{ border: "1px solid #dee2e6", padding: "8px", textAlign: "left" }}>Agent</th>
-                <th style={{ border: "1px solid #dee2e6", padding: "8px", textAlign: "left" }}>Amount</th>
-                <th style={{ border: "1px solid #dee2e6", padding: "8px", textAlign: "left" }}>Payment Date</th>
-                <th style={{ border: "1px solid #dee2e6", padding: "8px", textAlign: "left" }}>Status</th>
-                <th style={{ border: "1px solid #dee2e6", padding: "8px", textAlign: "left" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payments.map((p) => (
-                <tr key={p.id}>
-                  {/* Display Agent Name */}
-                  <td style={{ border: "1px solid #dee2e6", padding: "8px" }}>{getAgentName(p.agent_id)}</td>
-                  <td style={{ border: "1px solid #dee2e6", padding: "8px" }}>${parseFloat(p.amount).toFixed(2)}</td>
-                  <td style={{ border: "1px solid #dee2e6", padding: "8px" }}>{p.payment_date}</td>
-                  <td style={{ border: "1px solid #dee2e6", padding: "8px" }}>
-                    <span style={{
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      backgroundColor: 
-                        p.status === "Completed" ? "#d4edda" :
-                        p.status === "Cancelled" ? "#e2e3e5" :
-                        p.status === "pending" || p.status === "Pending" ? "#fff3cd" :
-                        "#f8d7da",
-                      color: 
-                        p.status === "Completed" ? "#155724" :
-                        p.status === "Cancelled" ? "#383d41" :
-                        p.status === "pending" || p.status === "Pending" ? "#856404" :
-                        "#721c24",
-                      textTransform: "capitalize"
-                    }}>
-                      {p.status}
-                    </span>
-                  </td>
-                  <td style={{ border: "1px solid #dee2e6", padding: "8px", display: "flex", gap: "5px" }}>
-                      {/* Show Validate Button only if Pending */}
-                      {(p.status === "pending" || p.status === "Pending") && (
-                        <>
-                          <button
-                            onClick={() => handleValidate(p.id)}
-                            style={{
-                                padding: "5px 10px",
-                                backgroundColor: "#28a745",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "3px",
-                                cursor: "pointer",
-                                fontSize: "0.9em"
-                            }}
-                          >
-                              Validate
-                          </button>
-                          
-                          <button
-                            onClick={() => handleCancel(p.id)}
-                            style={{
-                                padding: "5px 10px",
-                                backgroundColor: "#dc3545",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "3px",
-                                cursor: "pointer",
-                                fontSize: "0.9em"
-                            }}
-                          >
-                              Cancel
-                          </button>
-                        </>
-                      )}
-                  </td>
+          <div className="table-container">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "#f8f9fa" }}>
+                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Agent</th>
+                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Amount</th>
+                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Payment Date</th>
+                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Status</th>
+                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {payments.map((p) => (
+                  <tr key={p.id}>
+                    {/* Display Agent Name */}
+                    <td style={{ border: "none", padding: "8px" }}>{getAgentName(p.agent_id)}</td>
+                    <td style={{ border: "none", padding: "8px" }}>${parseFloat(p.amount).toFixed(2)}</td>
+                    <td style={{ border: "none", padding: "8px" }}>{p.payment_date}</td>
+                    <td style={{ border: "none", padding: "8px" }}>
+                      <span style={{
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        backgroundColor: 
+                          p.status === "Completed" ? "#d4edda" :
+                          p.status === "Cancelled" ? "#e2e3e5" :
+                          p.status === "pending" || p.status === "Pending" ? "#fff3cd" :
+                          "#f8d7da",
+                        color: 
+                          p.status === "Completed" ? "#155724" :
+                          p.status === "Cancelled" ? "#383d41" :
+                          p.status === "pending" || p.status === "Pending" ? "#856404" :
+                          "#721c24",
+                        textTransform: "capitalize"
+                      }}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td style={{ border: "none", padding: "8px", display: "flex", gap: "5px" }}>
+                        {/* Show Validate Button only if Pending */}
+                        {(p.status === "pending" || p.status === "Pending") && (
+                          <>
+                            <button
+                              onClick={() => handleValidate(p.id)}
+                              className="btn btn-success"
+                              /* style removed */
+  
+                            >
+                                Validate
+                            </button>
+                            
+                            <button
+                              onClick={() => handleCancel(p.id)}
+                              className="btn btn-cancel"
+                              /* style removed */
+  
+                            >
+                                Cancel
+                            </button>
+                          </>
+                        )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

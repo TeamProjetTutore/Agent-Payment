@@ -24,3 +24,13 @@ class Payment(Base):
     status = Column(String)
     payment_date = Column(Date, nullable=True)
     agent_id = Column(Integer, ForeignKey("agents.id"))
+
+
+class Debt(Base):
+    __tablename__ = "debts"
+    id = Column(Integer, primary_key=True)
+    amount = Column(Float)
+    reason = Column(String)
+    debt_date = Column(Date, nullable=True)
+    agent_id = Column(Integer, ForeignKey("agents.id"))
+
