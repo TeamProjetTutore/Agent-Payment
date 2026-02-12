@@ -4,38 +4,29 @@ import { login } from "../services/auth";
 
 export default function Login() {
   const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleChange(e) {
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  }
+  };
 
-  function validate() {
+  const validate = () => {
     if (!formData.email || !formData.password) {
-      return "All fields are required";
+      return "Tous les champs sont requis";
     }
-
     if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      return "Invalid email address";
+      return "Adresse email invalide";
     }
-
     if (formData.password.length < 6) {
-      return "Password must be at least 6 characters";
+      return "Le mot de passe doit contenir au moins 6 caractères";
     }
-
     return "";
-  }
+  };
 
-  function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     const validationError = validate();
     if (validationError) {
       setErrors(validationError);
@@ -45,33 +36,31 @@ export default function Login() {
     setErrors("");
     setLoading(true);
 
-    login(formData.email, formData.password)
-      .then((data) => {
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        navigate("/dashboard");
-      })
-      .catch((err) => {
-        const backendError = err.response?.data?.detail;
-        if (Array.isArray(backendError)) {
-          setErrors(backendError[0].msg);
-        } else if (typeof backendError === "string") {
-          setErrors(backendError);
-        } else {
-          setErrors("Login failed");
-        }
-      })
-      .finally(() => setLoading(false));
-  }
+    try {
+      const data = await login(formData.email, formData.password);
+      localStorage.setItem("token", data.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate("/dashboard");
+    } catch (err) {
+      const backendError = err.response?.data?.detail;
+      setErrors(
+        typeof backendError === "string" 
+          ? backendError 
+          : "Échec de la connexion. Vérifiez vos identifiants."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="login-container">
       <form className="login-card" onSubmit={handleSubmit}>
-        <h1 className="login-title">School Agent Payment</h1>
-        <p className="login-subtitle">Sign in to your account</p>
-
+        <h1 className="login-title">SchoolPay</h1>
+        <p className="login-subtitle">Système de Paie des Enseignants</p>
+        
         {errors && <p className="error-text">{errors}</p>}
-
+        
         <div className="form-group">
           <label>Email</label>
           <input
@@ -80,22 +69,24 @@ export default function Login() {
             placeholder="admin@school.com"
             value={formData.email}
             onChange={handleChange}
+            required
           />
         </div>
-
+        
         <div className="form-group">
-          <label>Password</label>
+          <label>Mot de passe</label>
           <input
             type="password"
             name="password"
             placeholder="••••••••"
             value={formData.password}
             onChange={handleChange}
+            required
           />
         </div>
-
+        
         <button className="login-btn" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Connexion..." : "Se connecter"}
         </button>
       </form>
     </div>

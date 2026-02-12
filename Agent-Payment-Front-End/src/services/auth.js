@@ -1,11 +1,11 @@
 import api from "./api";
 
-export function login(email, password) {
-    console.log("Sending:", { email, password });
-    return api.post("/login", { email, password })
-        .then(res => res.data)
-        .catch(err => {
-            console.error("Backend error:", err.response?.data || err.message);
-            throw err;
-        });
-}
+export const login = async (email, password) => {
+  const response = await api.post("/login", { email, password });
+  return response.data;
+};
+
+export const setupAdmin = async () => {
+  const response = await api.post("/setup-admin");
+  return response.data;
+};
