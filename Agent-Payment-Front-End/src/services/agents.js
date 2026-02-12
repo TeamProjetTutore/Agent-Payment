@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "./api.js";
 
 export const getAgents = () => api.get("/agents/");
 export const createAgent = (data) => api.post("/agents/", data);

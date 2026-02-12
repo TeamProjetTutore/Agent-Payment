@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDashboardStats } from "../services/reports";
+import { getDashboardStats } from "../services/reports.js";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { FaCalendarAlt, FaFilter } from "react-icons/fa";
 

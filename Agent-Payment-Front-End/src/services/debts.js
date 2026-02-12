@@ -1,4 +1,4 @@
-import API from "./api";
+import API from "./api.js";
 
 export const getDebts = () => API.get("/debts/");
 export const createDebt = (data) => API.post("/debts/", data);

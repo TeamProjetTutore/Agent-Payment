@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getAgents, createAgent, deleteAgent, updateAgent } from "../services/agents";
+import { getAgents, createAgent, deleteAgent, updateAgent } from "../services/agents.js";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function Agents() {

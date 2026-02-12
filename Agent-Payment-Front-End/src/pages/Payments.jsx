@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { getPayments, createPayment, updatePaymentStatus } from "../services/payments";
-import { getAgents } from "../services/agents";
-import { getDebts } from "../services/debts";
+import { getPayments, createPayment, updatePaymentStatus } from "../services/payments.js";
+import { getAgents } from "../services/agents.js";
+import { getDebts } from "../services/debts.js";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
 export default function Payments() {

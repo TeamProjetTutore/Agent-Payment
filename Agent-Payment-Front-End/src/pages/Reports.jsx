@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { getAgents } from "../services/agents";
-import { downloadAgentList, downloadDebtList, downloadPayslip } from "../services/reports";
+import { getAgents } from "../services/agents.js";
+import { downloadAgentList, downloadDebtList, downloadPayslip } from "../services/reports.js";
 
 export default function Reports() {
   const [agents, setAgents] = useState([]);

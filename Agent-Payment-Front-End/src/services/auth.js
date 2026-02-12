@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "./api.js";
 
 export function login(email, password) {
     console.log("Sending:", { email, password });
