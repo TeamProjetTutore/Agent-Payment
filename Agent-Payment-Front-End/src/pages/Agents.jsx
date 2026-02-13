@@ -36,10 +36,15 @@ export default function Agents() {
     }
 
     // Phone validation (099..., 24399..., +24399...)
-    const phoneRegex = /^(099|24399|\+24399)\d+$/;
+    const phoneRegex = /^(0|243|\+243)\d+$/;
     if (form.phone_number && !phoneRegex.test(form.phone_number)) {
         showToast("invalid_phone_format", "error");
         return false;
+    }
+
+    if(form.salary < 50){
+      showToast("The salary is under 50$", "error")
+      return false;
     }
 
     // Date of birth validation (not exceed today and year <= 2006)
@@ -215,7 +220,7 @@ export default function Agents() {
             <input
             id="phone_number"
             name="phone_number"
-            placeholder="099... or +243..."
+            placeholder="09... or 08... or +243..."
             value={form.phone_number}
             onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
             />
