@@ -125,8 +125,8 @@ export default function Debts() {
       <form className="animate-slide-up" onSubmit={handleSubmit} style={{ 
           marginBottom: "30px", 
           display: "grid", 
-          gridTemplateColumns: "repeat(3, 1fr)", 
-          gap: "25px", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", 
+          gap: "20px", 
           backgroundColor: "var(--card-bg)",
           padding: "30px",
           borderRadius: "15px",

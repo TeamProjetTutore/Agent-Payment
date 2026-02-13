@@ -606,6 +606,13 @@ input[readOnly] {
   .home-content {
     padding: 2rem;
   }
+
+  /* Debts form responsive - single column on tablet and mobile */
+  form[style*="gridTemplateColumns"] {
+    grid-template-columns: repeat(1, 1fr) !important;
+    gap: 20px !important;
+    padding: 20px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -620,6 +627,21 @@ input[readOnly] {
 
   .login-card {
     padding: 1.5rem;
+  }
+
+  /* Debts form responsive - single column on mobile */
+  form[style*="gridTemplateColumns"] {
+    grid-template-columns: repeat(1, 1fr) !important;
+    gap: 15px !important;
+    padding: 15px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Calculation info box - better mobile spacing */
+  div[style*="borderLeft"] {
+    padding: 12px !important;
+    font-size: 0.9rem !important;
   }
 }
 
