@@ -1,7 +1,18 @@
-# Edit: alembic/versions/6e449f3834d8_add_payment_date_to_payments.py
+"""add payment date column
+
+Revision ID: 9182981db22b
+Revises: adc9380f2523
+Create Date: 2026-02-11 10:00:00.000000
+
+"""
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql  # if using PostgreSQL
+
+# revision identifiers, used by Alembic.
+revision = '9182981db22b'
+down_revision = 'adc9380f2523'
+branch_labels = None
+depends_on = None
 
 def upgrade() -> None:
     """Upgrade schema."""

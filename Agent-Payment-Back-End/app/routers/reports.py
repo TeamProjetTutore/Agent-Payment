@@ -187,6 +187,18 @@ def generate_payslip(
     net = total_paid
     c.drawString(70, y, f"NET PAID: ${net:,.2f}")
     
+    # Signature area at the bottom
+    y -= 100
+    if y < 100:
+        c.showPage()
+        y = 700
+    
+    c.line(350, y, 550, y)
+    c.setFont("Helvetica", 10)
+    c.setFillColor(colors.black)
+    c.drawCentredString(450, y - 15, "Agent's Signature")
+    c.drawCentredString(450, y - 30, f"{agent.name}")
+    
     c.save()
     buffer.seek(0)
     return StreamingResponse(buffer, media_type='application/pdf', headers={

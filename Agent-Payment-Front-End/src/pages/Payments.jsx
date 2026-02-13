@@ -3,13 +3,14 @@ import { getPayments, createPayment, updatePaymentStatus } from "../services/pay
 import { getAgents } from "../services/agents.js";
 import { getDebts } from "../services/debts.js";
 import { FaCheck, FaTimes } from "react-icons/fa";
+import { useUI } from "../context/UIContext";
 
 export default function Payments() {
+  const { t, theme, showToast } = useUI();
   const [payments, setPayments] = useState([]);
   const [agents, setAgents] = useState([]);
   const [allDebts, setAllDebts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   
   // Fixed form - defaults to pending, no status selection
   const [form, setForm] = useState({
@@ -23,8 +24,7 @@ export default function Payments() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      setError("Please login first");
-      // Redirect to login after showing error
+      showToast("Please login first", "error");
       setTimeout(() => {
         window.location.href = "/";
       }, 2000);
@@ -37,7 +37,6 @@ export default function Payments() {
   async function loadData() {
     try {
       setLoading(true);
-      setError("");
       
       // Load payments, agents, and debts in parallel
       const [paymentsRes, agentsRes, debtsRes] = await Promise.allSettled([
@@ -52,7 +51,7 @@ export default function Payments() {
       } else {
         console.error("Failed to load payments:", paymentsRes.reason);
         if (paymentsRes.reason.response?.status === 401) {
-          setError("Session expired. Redirecting to login...");
+          showToast("Session expired. Redirecting to login...", "error");
           localStorage.removeItem("token");
           setTimeout(() => window.location.href = "/login", 10000);
         }
@@ -74,7 +73,7 @@ export default function Payments() {
 
     } catch (err) {
       console.error("Error loading data:", err);
-      setError("Failed to load data");
+      showToast("load_error", "error");
     } finally {
       setLoading(false);
     }
@@ -84,8 +83,6 @@ export default function Payments() {
     e.preventDefault();
     
     try {
-      setError("");
-      
       // Prepare data for backend
       const paymentData = {
         ...form,
@@ -97,6 +94,7 @@ export default function Payments() {
       };
       
       await createPayment(paymentData);
+      showToast("payment_success", "success");
       
       // Reset form
       setForm({
@@ -110,7 +108,8 @@ export default function Payments() {
       
     } catch (err) {
       console.error("Error creating payment:", err);
-      setError(err.response?.data?.detail || "Failed to create payment");
+      const detail = err.response?.data?.detail;
+      showToast(detail || "Failed to create payment", "error");
     }
   }
 
@@ -118,11 +117,12 @@ export default function Payments() {
   async function handleValidate(paymentId) {
     try {
         await updatePaymentStatus(paymentId, "Completed");
+        showToast("payment_validated", "success");
         // Refresh list
         loadData();
     } catch (err) {
         console.error("Error validating payment:", err);
-        alert("Failed to validate payment");
+        showToast("Failed to validate payment", "error");
     }
   }
 
@@ -132,10 +132,11 @@ export default function Payments() {
 
     try {
         await updatePaymentStatus(paymentId, "Cancelled");
+        showToast("payment_cancelled", "success");
         loadData();
     } catch (err) {
         console.error("Error cancelling payment:", err);
-        alert("Failed to cancel payment");
+        showToast("Failed to cancel payment", "error");
     }
   }
 
@@ -147,53 +148,31 @@ export default function Payments() {
 
   // Show loading state
   if (loading) {
-    return <div>Loading payments...</div>;
+    return <div style={{ textAlign: "center", padding: "50px", fontSize: "1.2rem" }}>Loading payments...</div>;
   }
-
-
 
   // Max date for month picker (current month)
   const maxMonth = new Date().toISOString().slice(0, 7);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Payments</h2>
-
-      {error && (
-        <div style={{ 
-          color: "#721c24", 
-          backgroundColor: "#f8d7da", 
-          borderColor: "#f5c6cb",
-          padding: "10px", 
-          marginBottom: "20px",
-          border: "1px solid transparent",
-          borderRadius: "4px"
-        }}>
-          {error}
-        </div>
-      )}
+    <>
+      <h2>{t("payments")}</h2>
 
       {/* CREATE FORM */}
-      <form 
-        onSubmit={handleSubmit} 
-        style={{ 
-          display: "flex", 
-          flexWrap: "wrap",
-          gap: "20px",
-          alignItems: "flex-end",
-          justifyContent: "space-between",
-          margin: "0 auto 20px auto",
-          maxWidth: "100%",
-          padding: "20px",
-          border: "1px solid #ddd",
-          borderRadius: "5px",
-          backgroundColor: "#fff"
-        }}
-      >
-        <div>
-          <label htmlFor="agent_id" style={{ display: "block", marginBottom: "5px" }}>
-            Agent:
-          </label>
+      <form className="animate-slide-up" onSubmit={handleSubmit} style={{ 
+          marginBottom: "30px", 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", 
+          gap: "25px", 
+          backgroundColor: "var(--card-bg)",
+          padding: "30px",
+          borderRadius: "15px",
+          boxShadow: "var(--card-shadow)",
+          maxWidth: "1000px",
+          margin: "0 auto 40px auto"
+      }}>
+        <div className="form-group">
+          <label htmlFor="agent_id">{t("agents")}</label>
           <select
             id="agent_id"
             name="agent_id"
@@ -201,16 +180,12 @@ export default function Payments() {
             onChange={(e) => {
                 const agentId = parseInt(e.target.value);
                 const agent = agents.find(a => a.id === agentId);
-                
-                // Calculate total debt for this agent in the SELECTED MONTH
-                const selectedMonth = form.payment_date; // YYYY-MM
+                const selectedMonth = form.payment_date;
                 const agentDebtsInMonth = allDebts.filter(d => 
                     d.agent_id === agentId && 
                     d.debt_date.startsWith(selectedMonth)
                 );
                 const totalMonthDebt = agentDebtsInMonth.reduce((sum, debt) => sum + parseFloat(debt.amount), 0);
-                
-                // Set amount to salary - total month debt
                 const finalAmount = agent ? Math.max(0, agent.salary - totalMonthDebt) : "";
 
                 setForm({ 
@@ -220,21 +195,17 @@ export default function Payments() {
                 });
             }}
             required
-            style={{ width: "100%", padding: "8px" }}
+            style={{ width: "100%" }}
           >
-            <option value="">Select Agent</option>
+            <option value="">{t("select_agent")}</option>
             {agents.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
+              <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>
         </div>
 
-        <div>
-          <label htmlFor="amount" style={{ display: "block", marginBottom: "5px" }}>
-            Amount:
-          </label>
+        <div className="form-group">
+          <label htmlFor="amount">{t("salary")}</label>
           <input
             id="amount"
             name="amount"
@@ -243,14 +214,12 @@ export default function Payments() {
             placeholder="Amount"
             value={form.amount}
             readOnly
-            style={{ width: "100%", padding: "8px", backgroundColor: "#e9ecef" }}
+            style={{ width: "100%" }}
           />
         </div>
 
-        <div>
-          <label htmlFor="payment_date" style={{ display: "block", marginBottom: "5px" }}>
-            Payment Month:
-          </label>
+        <div className="form-group">
+          <label htmlFor="payment_date">{t("payment_month")}</label>
           <input
             id="payment_date"
             name="payment_date"
@@ -259,22 +228,25 @@ export default function Payments() {
             value={form.payment_date}
             onChange={(e) => setForm({ ...form, payment_date: e.target.value })}
             required
+            style={{ width: "100%" }}
           />
         </div>
 
         {/* Removed Status Select - Defaults to Pending */}
 
-        <div style={{ display: "flex", alignItems: "flex-end" }}>
+        <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "center", marginTop: "10px" }}>
           <button 
             type="submit"
             className="btn"
             style={{
-              padding: "10px 25px",
-              backgroundColor: "#1e3c72",
+              padding: "12px 40px",
+              backgroundColor: "var(--primary-color)",
               color: "white",
+              fontSize: "1rem",
+              minWidth: "220px"
             }}
           >
-            Add Payment
+            {t("add_payment")}
           </button>
         </div>
       </form>
@@ -282,33 +254,33 @@ export default function Payments() {
       {/* PAYMENTS LIST */}
       <div style={{ marginTop: "20px" }}>
         <div style={{ marginBottom: "10px" }}>
-          <h3>Payment List ({payments.length})</h3>
+          <h3>{t("payment_list")} ({payments.length})</h3>
         </div>
 
         {payments.length === 0 ? (
-          <div style={{ padding: "20px", textAlign: "center", border: "1px dashed #ddd" }}>
-            No payments found
+          <div style={{ padding: "20px", textAlign: "center", border: "1px dashed var(--border-color)" }}>
+            {t("no_payments_found")}
           </div>
         ) : (
           <div className="table-container">
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table className="table">
               <thead>
-                <tr style={{ backgroundColor: "#f8f9fa" }}>
-                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Agent</th>
-                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Amount</th>
-                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Payment Date</th>
-                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Status</th>
-                  <th style={{ border: "none", padding: "8px", textAlign: "left" }}>Actions</th>
+                <tr>
+                  <th>{t("agents")}</th>
+                  <th>{t("salary")}</th>
+                  <th>{t("date")}</th>
+                  <th>{t("status")}</th>
+                  <th>{t("actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.id}>
                     {/* Display Agent Name */}
-                    <td style={{ border: "none", padding: "8px" }}>{getAgentName(p.agent_id)}</td>
-                    <td style={{ border: "none", padding: "8px" }}>${parseFloat(p.amount).toFixed(2)}</td>
-                    <td style={{ border: "none", padding: "8px" }}>{p.payment_date}</td>
-                    <td style={{ border: "none", padding: "8px" }}>
+                    <td>{getAgentName(p.agent_id)}</td>
+                    <td>${parseFloat(p.amount).toFixed(2)}</td>
+                    <td>{p.payment_date}</td>
+                    <td>
                       <span style={{
                         padding: "4px 8px",
                         borderRadius: "4px",
@@ -324,10 +296,11 @@ export default function Payments() {
                           "#721c24",
                         textTransform: "capitalize"
                       }}>
-                        {p.status}
+                        {t(p.status.toLowerCase())}
                       </span>
                     </td>
-                    <td style={{ border: "none", padding: "8px", display: "flex", gap: "5px" }}>
+                    <td>
+                      <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
                         {/* Show Validate Button only if Pending */}
                         {(p.status === "pending" || p.status === "Pending") && (
                           <>
@@ -348,6 +321,7 @@ export default function Payments() {
                             </button>
                           </>
                         )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -356,6 +330,6 @@ export default function Payments() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

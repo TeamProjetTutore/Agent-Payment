@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { getDashboardStats } from "../services/reports.js";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { FaCalendarAlt, FaFilter } from "react-icons/fa";
+import { useUI } from "../context/UIContext";
 
 export default function Dashboard() {
+  const { t, theme } = useUI();
   const [stats, setStats] = useState({
     total_agents: 0,
     monthly_payments: 0,
@@ -60,7 +62,7 @@ export default function Dashboard() {
     loadStats();
   }, [timeRange, selectedMonth]);
 
-  if (loading) return <div>Loading dashboard...</div>;
+  if (loading) return <div style={{ color: "var(--text-color)" }}>{t("loading_dashboard")}...</div>;
 
   // Prepare Chart Data
   const chartData = [
@@ -71,27 +73,28 @@ export default function Dashboard() {
   ];
 
   return (
-    <div style={{ padding: "20px", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
-      <h2>Dashboard</h2>
+    <>
+      <h2>{t("dashboard")}</h2>
 
       {/* FILTER BAR - Styled Design */}
       <div style={{ 
           display: "flex", 
           alignItems: "center", 
           gap: "20px",
-          backgroundColor: "white", 
+          backgroundColor: "var(--card-bg)", 
           padding: "15px 25px", 
           borderRadius: "12px", 
-          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+          boxShadow: "var(--card-shadow)",
           marginBottom: "30px",
-          flexWrap: "wrap"
+          flexWrap: "wrap",
+          color: "var(--text-color)"
       }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#555", fontWeight: "600" }}>
-              <FaFilter /> <span>Filters:</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", fontWeight: "600" }}>
+              <FaFilter /> <span>{t("filters")}:</span>
           </div>
 
           {/* Type Toggle */}
-          <div style={{ display: "flex", backgroundColor: "#f0f2f5", borderRadius: "8px", padding: "4px" }}>
+          <div style={{ display: "flex", backgroundColor: "var(--border-color)", borderRadius: "8px", padding: "4px", opacity: 0.9 }}>
               <button 
                 onClick={() => setTimeRange("all")} 
                 style={{
@@ -101,12 +104,12 @@ export default function Dashboard() {
                     cursor: "pointer",
                     fontWeight: "500",
                     transition: "all 0.2s",
-                    backgroundColor: timeRange === "all" ? "white" : "transparent",
-                    color: timeRange === "all" ? "#1e3c72" : "#666",
+                    backgroundColor: timeRange === "all" ? "var(--bg-color)" : "transparent",
+                    color: timeRange === "all" ? "var(--primary-color)" : "var(--text-color)",
                     boxShadow: timeRange === "all" ? "0 2px 4px rgba(0,0,0,0.1)" : "none"
                 }}
               >
-                  All Time
+                  {t("all_time")}
               </button>
               <button 
                 onClick={() => setTimeRange("month")} 
@@ -117,12 +120,12 @@ export default function Dashboard() {
                     cursor: "pointer",
                     fontWeight: "500",
                     transition: "all 0.2s",
-                    backgroundColor: timeRange === "month" ? "white" : "transparent",
-                    color: timeRange === "month" ? "#1e3c72" : "#666",
+                    backgroundColor: timeRange === "month" ? "var(--bg-color)" : "transparent",
+                    color: timeRange === "month" ? "var(--primary-color)" : "var(--text-color)",
                     boxShadow: timeRange === "month" ? "0 2px 4px rgba(0,0,0,0.1)" : "none"
                 }}
               >
-                  Monthly
+                  {t("monthly")}
               </button>
           </div>
 
@@ -136,8 +139,9 @@ export default function Dashboard() {
                     style={{
                         padding: "10px 15px 10px 35px",
                         borderRadius: "8px",
-                        border: "1px solid #ddd",
-                        backgroundColor: "white",
+                        border: "1px solid var(--border-color)",
+                        backgroundColor: "var(--card-bg)",
+                        color: "var(--text-color)",
                         fontSize: "0.95em",
                         outline: "none",
                         cursor: "pointer",
@@ -154,47 +158,48 @@ export default function Dashboard() {
 
       {/* TOP CARDS */}
       <div className="dashboard-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px" }}>
-        <div style={cardStyle}>
-          <h3 style={cardTitleStyle}>Total Agents</h3>
-          <p style={valStyle}>{stats.total_agents}</p>
+        <div style={cardStyle(theme)}>
+          <h3 style={cardTitleStyle(theme)}>{t("total_agents")}</h3>
+          <p style={valStyle(theme)}>{stats.total_agents}</p>
         </div>
-        <div style={cardStyle}>
-          <h3 style={cardTitleStyle}>Monthly Payments</h3>
-          <p style={valStyle}>${stats.monthly_payments?.toLocaleString()}</p>
+        <div style={cardStyle(theme)}>
+          <h3 style={cardTitleStyle(theme)}>{t("monthly_payments")}</h3>
+          <p style={valStyle(theme)}>${stats.monthly_payments?.toLocaleString() || 0}</p>
         </div>
       </div>
 
       {/* STATUS CARDS */}
-      <h3 style={{ color: "#444", marginBottom: "15px" }}>Payment Statuses</h3>
+      <h3 style={{ color: "var(--text-color)", marginBottom: "15px" }}>{t("payment_statuses")}</h3>
       <div className="dashboard-status-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "15px", marginBottom: "30px" }}>
-        <div style={{...cardStyle, borderLeft: "5px solid #ffc107"}}>
-          <h4 style={statusTitleStyle}>Pending</h4>
-          <p style={valStyle}>{stats.pending_count}</p>
+        <div style={{...cardStyle(theme), borderLeft: "5px solid #ffc107"}}>
+          <h4 style={statusTitleStyle(theme)}>{t("pending")}</h4>
+          <p style={valStyle(theme)}>{stats.pending_count}</p>
         </div>
-        <div style={{...cardStyle, borderLeft: "5px solid #28a745"}}>
-          <h4 style={statusTitleStyle}>Completed</h4>
-          <p style={valStyle}>{stats.completed_count}</p>
+        <div style={{...cardStyle(theme), borderLeft: "5px solid #28a745"}}>
+          <h4 style={statusTitleStyle(theme)}>{t("completed")}</h4>
+          <p style={valStyle(theme)}>{stats.completed_count}</p>
         </div>
-        <div style={{...cardStyle, borderLeft: "5px solid #dc3545"}}>
-          <h4 style={statusTitleStyle}>Failed</h4>
-          <p style={valStyle}>{stats.failed_count}</p>
+        <div style={{...cardStyle(theme), borderLeft: "5px solid #dc3545"}}>
+          <h4 style={statusTitleStyle(theme)}>{t("failed")}</h4>
+          <p style={valStyle(theme)}>{stats.failed_count}</p>
         </div>
-        <div style={{...cardStyle, borderLeft: "5px solid #6c757d"}}>
-          <h4 style={statusTitleStyle}>Cancelled</h4>
-          <p style={valStyle}>{stats.cancelled_count}</p>
+        <div style={{...cardStyle(theme), borderLeft: "5px solid #6c757d"}}>
+          <h4 style={statusTitleStyle(theme)}>{t("cancelled")}</h4>
+          <p style={valStyle(theme)}>{stats.cancelled_count}</p>
         </div>
       </div>
 
       {/* CHART */}
-      <h3 style={{ color: "#444", marginBottom: "15px" }}>Payment Distribution</h3>
-      <div style={{ height: "400px", width: "100%", backgroundColor: "white", padding: "20px", borderRadius: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+      <h3 style={{ color: "var(--text-color)", marginBottom: "15px" }}>{t("payment_distribution")}</h3>
+      <div style={{ height: "400px", width: "100%", backgroundColor: "var(--card-bg)", padding: "20px", borderRadius: "12px", boxShadow: "var(--card-shadow)" }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis dataKey="name" axisLine={false} tickLine={false} />
-            <YAxis allowDecimals={false} axisLine={false} tickLine={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme === "dark" ? "#444" : "#eee"} />
+            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: "var(--text-color)"}} />
+            <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{fill: "var(--text-color)"}} />
             <Tooltip 
-                contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                contentStyle={{ backgroundColor: "var(--card-bg)", borderRadius: "8px", border: "1px solid var(--border-color)", boxShadow: "var(--card-shadow)", color: "var(--text-color)" }}
+                itemStyle={{ color: "var(--text-color)" }}
                 cursor={{ fill: 'transparent' }}
             />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
@@ -206,36 +211,39 @@ export default function Dashboard() {
         </ResponsiveContainer>
       </div>
 
-    </div>
+    </>
   );
 }
 
-const cardStyle = {
+const cardStyle = (theme) => ({
   padding: "20px",
-  backgroundColor: "white",
+  backgroundColor: "var(--card-bg)",
   borderRadius: "12px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  boxShadow: "var(--card-shadow)",
   textAlign: "center",
   transition: "transform 0.2s",
-  cursor: "default"
-};
+  cursor: "default",
+  color: "var(--text-color)"
+});
 
-const cardTitleStyle = {
+const cardTitleStyle = (theme) => ({
     margin: "0 0 10px 0",
-    color: "#666",
+    color: "var(--text-color)",
+    opacity: 0.7,
     fontSize: "1em",
     fontWeight: "500"
-};
+});
 
-const statusTitleStyle = {
+const statusTitleStyle = (theme) => ({
     margin: "0 0 5px 0",
-    color: "#555",
+    color: "var(--text-color)",
+    opacity: 0.8,
     fontSize: "0.9em"
-};
+});
 
-const valStyle = {
+const valStyle = (theme) => ({
   fontSize: "2.2em",
   fontWeight: "700",
   margin: "0",
-  color: "#333"
-};
+  color: "var(--primary-color)"
+});

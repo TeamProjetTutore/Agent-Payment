@@ -14,6 +14,9 @@ class AgentCreate(BaseModel):
     name: str
     role: str
     salary: float = 0.0
+    date_of_birth: Optional[date] = None
+    email_address: Optional[str] = None
+    phone_number: Optional[str] = None
 
 class AgentOut(AgentCreate):
     id: int

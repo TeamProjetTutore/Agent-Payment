@@ -33,13 +33,14 @@ def create_payment(
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    # Check for duplicate payment in the same month
+    # Check for duplicate payment in the same month (excluding cancelled payments)
     if payment.payment_date:
         from sqlalchemy import extract
         existing_payment = db.query(Payment).filter(
             Payment.agent_id == payment.agent_id,
             extract('month', Payment.payment_date) == payment.payment_date.month,
-            extract('year', Payment.payment_date) == payment.payment_date.year
+            extract('year', Payment.payment_date) == payment.payment_date.year,
+            Payment.status != "Cancelled"  # Allow new payment if previous was cancelled
         ).first()
 
         if existing_payment:

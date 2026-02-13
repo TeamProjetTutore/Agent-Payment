@@ -15,6 +15,9 @@ class Agent(Base):
     name = Column(String)
     role = Column(String)
     salary = Column(Float, default=0.0)
+    date_of_birth = Column(Date, nullable=True)
+    email_address = Column(String, unique=True, nullable=True)
+    phone_number = Column(String, unique=True, nullable=True)
 
 
 class Payment(Base):

@@ -8,10 +8,12 @@ import Debts from "./pages/Debts";
 import Reports from "./pages/Reports";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayouts";
+import { UIProvider } from "./context/UIContext";
 
 function App() {
   return (
-    <BrowserRouter>
+    <UIProvider>
+      <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -31,7 +33,8 @@ function App() {
         </Route>
       </Routes>
     </BrowserRouter>
-  );
+  </UIProvider>
+);
 }
 
 export default App;

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { getDebts, createDebt, deleteDebt } from "../services/debts";
 import { getAgents } from "../services/agents";
+import { useUI } from "../context/UIContext";
 
 export default function Debts() {
+  const { t, theme, showToast } = useUI();
   const [debts, setDebts] = useState([]);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   
   const [form, setForm] = useState({
     agent_id: "",
@@ -29,7 +30,8 @@ export default function Debts() {
       setDebts(debtsRes.data);
       setAgents(agentsRes.data);
     } catch (err) {
-      setError("Failed to load data");
+      console.error("Error loading data:", err);
+      showToast("load_error", "error");
     } finally {
       setLoading(false);
     }
@@ -37,7 +39,6 @@ export default function Debts() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
 
     try {
       const agentId = parseInt(form.agent_id);
@@ -58,7 +59,7 @@ export default function Debts() {
       const maxAllowedDebt = agent.salary * 0.8; // Must keep at least 20%
 
       if (totalPotentialDebt > maxAllowedDebt) {
-        setError(`Debt refused: This would leave the agent with less than 20% of their salary ($${(agent.salary * 0.2).toFixed(2)}). Max additional debt allowed: $${Math.max(0, maxAllowedDebt - existingMonthlyDebts).toFixed(2)}`);
+        showToast("limit_exceeded", "error");
         return;
       }
 
@@ -67,6 +68,7 @@ export default function Debts() {
         agent_id: agentId,
         amount: amount
       });
+      showToast("debt_success", "success");
       
       setForm({
         agent_id: "",
@@ -76,13 +78,20 @@ export default function Debts() {
       });
       loadData();
     } catch (err) {
-      setError("Failed to create debt");
+      console.error("Error creating debt:", err);
+      showToast("Failed to create debt", "error");
     }
   }
 
   function handleDelete(id) {
     if (window.confirm("Delete this record?")) {
-      deleteDebt(id).then(loadData);
+      deleteDebt(id).then(() => {
+        showToast("delete_success", "success");
+        loadData();
+      }).catch(err => {
+        console.error("Error deleting debt:", err);
+        showToast("delete_error", "error");
+      });
     }
   }
 
@@ -106,34 +115,45 @@ export default function Debts() {
     ? selectedAgent.salary - monthlyDebtsForAgent - currentDebtAmount 
     : 0;
 
-  if (loading) return <div className="content">Loading...</div>;
+  if (loading) return <div style={{ textAlign: "center", padding: "50px", fontSize: "1.2rem" }}>Loading...</div>;
 
 
   return (
-    <div className="content">
-      <h2>Agent Debts</h2>
-      
-      {error && <p className="error-text">{error}</p>}
+    <>
+      <h2>{t("agent_debts")}</h2>
 
-      <form className="form-inline" onSubmit={handleSubmit} style={{ marginBottom: "30px", backgroundColor: "white", padding: "20px", borderRadius: "10px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)" }}>
-        <div style={{ flex: 1 }}>
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem" }}>Agent</label>
+      <form className="animate-slide-up" onSubmit={handleSubmit} style={{ 
+          marginBottom: "30px", 
+          display: "grid", 
+          gridTemplateColumns: "repeat(3, 1fr)", 
+          gap: "25px", 
+          backgroundColor: "var(--card-bg)",
+          padding: "30px",
+          borderRadius: "15px",
+          boxShadow: "var(--card-shadow)",
+          maxWidth: "1000px",
+          margin: "0 auto 40px auto"
+      }}>
+        <div className="form-group">
+          <label htmlFor="agent_id">{t("agents")}</label>
           <select 
+            id="agent_id"
             value={form.agent_id} 
             onChange={(e) => setForm({...form, agent_id: e.target.value})}
             required
             style={{ width: "100%" }}
           >
-            <option value="">Select Agent</option>
+            <option value="">{t("select_agent")}</option>
             {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>
 
-        <div style={{ flex: 1 }}>
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem" }}>Debt Amount</label>
+        <div className="form-group">
+          <label htmlFor="amount">{t("debt_amount")}</label>
           <input 
+            id="amount"
             type="number" 
-            placeholder="Amount" 
+            placeholder={t("debt_amount")} 
             value={form.amount} 
             onChange={(e) => setForm({...form, amount: e.target.value})}
             required
@@ -142,47 +162,49 @@ export default function Debts() {
           />
         </div>
 
-        <div style={{ flex: 2 }}>
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem" }}>Reason</label>
+        <div className="form-group">
+          <label htmlFor="debt_date">{t("date")}</label>
           <input 
-            type="text" 
-            placeholder="Reason for debt" 
-            value={form.reason} 
-            onChange={(e) => setForm({...form, reason: e.target.value})}
-            required
-            style={{ width: "100%" }}
-          />
-        </div>
-
-        <div style={{ flex: 1 }}>
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem" }}>Date</label>
-          <input 
+            id="debt_date"
             type="date" 
             value={form.debt_date} 
             readOnly
             disabled
-            style={{ width: "100%", backgroundColor: "#f8f9fa", cursor: "not-allowed" }}
+            style={{ width: "100%", opacity: 0.7 }}
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "flex-end" }}>
-          <button type="submit" className="btn" style={{ backgroundColor: "#1e3c72", color: "white", height: "42px", padding: "0 20px" }}>
-            Add Debt
+        <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+          <label htmlFor="reason">{t("reason")}</label>
+          <textarea 
+            id="reason"
+            placeholder={t("reason")} 
+            value={form.reason} 
+            onChange={(e) => setForm({...form, reason: e.target.value})}
+            required
+            rows="3"
+            style={{ width: "100%", resize: "vertical" }}
+          />
+        </div>
+
+        <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "center", marginTop: "10px" }}>
+          <button type="submit" className="btn" style={{ backgroundColor: "var(--primary-color)", color: "white", padding: "12px 40px", fontSize: "1rem", minWidth: "220px" }}>
+            {t("add_debt")}
           </button>
         </div>
       </form>
 
       {form.agent_id && (
-        <div style={{ marginBottom: "20px", padding: "15px", background: "#e8f0fe", borderRadius: "8px", borderLeft: "5px solid #1e3c72" }}>
-            <strong>Calculation for {selectedAgent.name}:</strong> Base Salary: ${selectedAgent.salary.toLocaleString()} - Total Debts (Month): ${(monthlyDebtsForAgent + currentDebtAmount).toLocaleString()} = 
+        <div style={{ marginBottom: "20px", padding: "15px", background: theme === "dark" ? "#1a2a44" : "#e8f0fe", borderRadius: "8px", borderLeft: "5px solid var(--primary-color)", color: "var(--text-color)" }}>
+            <strong>{t("calculation_for")} {selectedAgent.name || ""}:</strong> {t("base_salary")}: ${selectedAgent.salary?.toLocaleString() || 0} - {t("total_debts_month")}: ${(monthlyDebtsForAgent + currentDebtAmount).toLocaleString()} = 
             {isAmountValid && isWithinLimit && (
-              <span style={{ fontSize: "1.2rem", color: "#1e3c72", fontWeight: "bold", marginLeft: "10px" }}>
-                 Rest to Receive: ${remainingSalary.toLocaleString()}
+              <span style={{ fontSize: "1.2rem", color: "var(--primary-color)", fontWeight: "bold", marginLeft: "10px" }}>
+                 {t("rest_to_receive")}: ${remainingSalary?.toLocaleString() || 0}
               </span>
             )}
             {!isWithinLimit && form.amount && (
               <span style={{ color: "#e74c3c", marginLeft: "10px", fontWeight: "bold" }}>
-                [Limit Exceeded]
+                [{t("limit_exceeded")}]
               </span>
             )}
         </div>
@@ -192,11 +214,11 @@ export default function Debts() {
         <table className="table">
           <thead>
             <tr>
-              <th>Agent</th>
-              <th>Amount</th>
-              <th>Reason</th>
-              <th>Date</th>
-              <th>Action</th>
+              <th>{t("agents")}</th>
+              <th>{t("debt_amount")}</th>
+              <th>{t("reason")}</th>
+              <th>{t("date")}</th>
+              <th>{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -214,6 +236,6 @@ export default function Debts() {
           </tbody>
         </table>
       </div>
-    </div>
+    </>
   );
 }

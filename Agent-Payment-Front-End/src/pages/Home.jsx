@@ -1,11 +1,14 @@
 import { Link } from "react-router-dom";
+import { useUI } from "../context/UIContext";
 
 export default function Home() {
+  const { t } = useUI();
+
   return (
     <div className="home-container">
       <div className="home-content animate-slide-up">
         <h1 className="home-title animate-fade-in">
-          Welcome to AgentPay
+          {t("welcome")}
         </h1>
         <p style={{ 
           fontSize: "1.2rem", 
@@ -13,13 +16,11 @@ export default function Home() {
           color: "rgba(255, 255, 255, 0.8)",
           maxWidth: "600px" 
         }} className="animate-fade-in">
-          The ultimate platform for managing agent payments with ease, 
-          security, and transparency. Join us today and streamline your 
-          financial operations.
+          {t("manage_agents_with_ease")}
         </p>
         <div className="animate-slide-up" style={{ animationDelay: "0.3s" }}>
           <Link to="/login" className="home-btn">
-            Get Started
+            {t("get_started")}
           </Link>
         </div>
       </div>

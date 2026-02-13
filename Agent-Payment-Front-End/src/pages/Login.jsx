@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/auth.js";
+import { useUI } from "../context/UIContext";
 
 export default function Login() {
+  const { t, showToast } = useUI();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -10,7 +12,6 @@ export default function Login() {
     password: "",
   });
 
-  const [errors, setErrors] = useState("");
   const [loading, setLoading] = useState(false);
 
   function handleChange(e) {
@@ -19,30 +20,28 @@ export default function Login() {
 
   function validate() {
     if (!formData.email || !formData.password) {
-      return "All fields are required";
+      showToast("all_fields_required", "error");
+      return false;
     }
 
     if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      return "Invalid email address";
+      showToast("invalid_email", "error");
+      return false;
     }
 
     if (formData.password.length < 6) {
-      return "Password must be at least 6 characters";
+      showToast("password_too_short", "error");
+      return false;
     }
 
-    return "";
+    return true;
   }
 
   function handleSubmit(e) {
     e.preventDefault();
 
-    const validationError = validate();
-    if (validationError) {
-      setErrors(validationError);
-      return;
-    }
+    if (!validate()) return;
 
-    setErrors("");
     setLoading(true);
 
     login(formData.email, formData.password)
@@ -53,13 +52,15 @@ export default function Login() {
       })
       .catch((err) => {
         const backendError = err.response?.data?.detail;
+        let errorMessage = "login_failed";
+        
         if (Array.isArray(backendError)) {
-          setErrors(backendError[0].msg);
+          errorMessage = backendError[0].msg;
         } else if (typeof backendError === "string") {
-          setErrors(backendError);
-        } else {
-          setErrors("Login failed");
+          errorMessage = backendError;
         }
+        
+        showToast(errorMessage, "error");
       })
       .finally(() => setLoading(false));
   }
@@ -67,13 +68,11 @@ export default function Login() {
   return (
     <div className="login-container">
       <form className="login-card" onSubmit={handleSubmit}>
-        <h1 className="login-title">School Agent Payment</h1>
-        <p className="login-subtitle">Sign in to your account</p>
-
-        {errors && <p className="error-text">{errors}</p>}
+        <h1 className="login-title">AgentPay</h1>
+        <p className="login-subtitle">{t("sign_in")}</p>
 
         <div className="form-group">
-          <label>Email</label>
+          <label>{t("email")}</label>
           <input
             type="email"
             name="email"
@@ -84,7 +83,7 @@ export default function Login() {
         </div>
 
         <div className="form-group">
-          <label>Password</label>
+          <label>{t("password")}</label>
           <input
             type="password"
             name="password"
@@ -95,7 +94,7 @@ export default function Login() {
         </div>
 
         <button className="login-btn" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
+          {loading ? t("logging_in") : t("login")}
         </button>
       </form>
     </div>
